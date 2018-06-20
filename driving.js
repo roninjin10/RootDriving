@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import log from 'ololog'
 
+
 export const main = async () => {
   const entries = await parseFile(getFilePath())
   const { drivers, travel } = parseEntries(...entries)
@@ -22,7 +23,7 @@ export const getFilePath = () => {
 }
 
 export const render = (drivers, travel) => {
-  return log(
+  return log.bright.magenta(
     [...drivers]
       .map(driver => {
         if (!travel[driver]) {

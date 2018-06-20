@@ -1,4 +1,5 @@
 const fs = require('fs')
+const path = require('path')
 
 let drivers = new Set()
 let trips = {}
@@ -9,16 +10,16 @@ const main = async () => {
 }
 
 const getFilePath = () => {
-  const path = process.argv[2]
+  const file = process.argv[2]
 
-  if (path === undefined) {
+  if (file === undefined) {
     console.log(`
-      no path provided
+      no file provided
     `)
     process.exit(-1)
   }
   
-  return path
+  return path.join(__dirname, file)
 }
 
 const render = () => {
@@ -30,7 +31,7 @@ const render = () => {
       }
       return {driver, ...trips[driver]}
     })
-    .map(({ driver, miles, duration }) => {driver, miles, mph: miles / duration})
+    .map(({ driver, miles, duration }) => ({driver, miles, mph: miles / duration}))
     .map(({ driver, miles, mph }) => {
       if (miles) {
         return `${driver}: ${miles} miles @ ${mph} mph`
@@ -48,7 +49,7 @@ const parseDriver = entry => {
 }
 
 const findDuration = (startTime, endTime) => {
-  const startTimeHours = Number(startTime.split(':')[0]))
+  const startTimeHours = Number(startTime.split(':')[0])
   const startTimeMinutes = Number(startTime.split(':')[1])
   const endTimeHours = Number(endTime.split(':')[0])
   const endTimeMinutes = Number(endTime.split(':')[1])
@@ -56,10 +57,7 @@ const findDuration = (startTime, endTime) => {
   return endTimeHours + endTimeMinutes / 60 - startTimeHours - startTimeMinutes / 60 
 }
 
-const isValidTrip = (duration, miles) => {
-  const mph = miles / duration
-  return mph >= 5 && mph <= 100
-} 
+const isValidSpeed = mph => mph >= 5 && mph <= 100
 
 const parseTrip = entry => {
   validateParseTrip(entry)
@@ -67,7 +65,7 @@ const parseTrip = entry => {
   const [ _, driver, startTime, endTime, miles ] = entry
   const duration = findDuration(startTime, endTime)
   
-  if (isValidTrip(duration, miles)) {
+  if (isValidSpeed(miles / duration)) {
     trips[driver] = trips[driver] || {miles: 0, duration: 0}
     
     trips[driver].miles += miles
@@ -76,6 +74,7 @@ const parseTrip = entry => {
 }
 
 const parseLine = entry => {
+console.log(entry)
   if (entry[0] === 'Driver') {
     return parseDriver(entry)
   } else if (entry[0] === 'Trip') {
@@ -94,11 +93,13 @@ const parseFile = filePath => {
     .then(data => {
       return data
         .split('\n')
+        .filter(line => line !== '')
         .map(line => line.split(' '))
         .forEach(parseLine)
 
     })
     .catch(err => {
+      console.log(err)
       console.log(`
         unable to read filetype:
         ${filePath}
@@ -110,14 +111,14 @@ const parseFile = filePath => {
 // library code
 
 const readFileAsync = filePath => {
-  new Promise((resolve, reject) => {
-    fs.readFile(filePath, (err, data) => {
+  return new Promise((resolve, reject) => {
+    fs.readFile(filePath, 'utf8', (err, data) => {
       if (err) {
         return reject(err)
       }
       return resolve(data)
-    }
-  }
+    })
+  })
 }
 
 // validation
@@ -139,6 +140,21 @@ const validateParseDriver = entry => {
   }
 }
 
+const isTime = str => {
+  const time = str.split(':')
+  return (
+    time.length === 2 &&
+    !isNaN(time[0]) &&
+    !isNaN(time[1]) &&
+    Number.isInteger(Number(time[0])) &&
+    Number.isInteger(Number(time[1])) &&
+    time[0] >= 1 &&
+    time[0] <= 24 &&
+    time[1] >= 0 &&
+    time[1] <= 59
+  )
+}
+
 const validateParseTrip = entry => {
   if (
     entry.length !== 5 ||
@@ -146,6 +162,9 @@ const validateParseTrip = entry => {
     !isTime(entry[3]) ||
     isNaN(entry[4])
   ) {
+    console.log(entry.length)
+    console.log(isTime(entry[3]))
+    console.log(isNaN(entry[4]))
     console.log(`
       Invalid trip
       ${entry.join(' ')}

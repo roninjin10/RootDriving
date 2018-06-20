@@ -69,7 +69,7 @@ export const isValidSpeed = mph => mph >= 5 && mph <= 100
 export const parseTrip = entry => {
   validateParseTrip(entry)
 
-  const [ _, driver, startTime, endTime, miles ] = entry
+  const [ , driver, startTime, endTime, miles ] = entry
   const duration = findDuration(startTime, endTime)
 
   if (Number(duration) && isValidSpeed(Number(miles) / Number(duration))) {
@@ -134,8 +134,6 @@ export const parseFile = filePath => {
       return process.exit(1)
     })
 }
-
-// library code
 
 export const readFileAsync = filePath => {
   return new Promise((resolve, reject) => {

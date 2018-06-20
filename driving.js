@@ -1,106 +1,131 @@
-const fs = require('fs')
-const path = require('path')
+import fs from 'fs'
+import path from 'path'
+import log from 'ololog'
 
-let drivers = new Set()
-let trips = {}
-
-const main = async () => {
-  await parseFile(getFilePath())
-  render()
+export const main = async () => {
+  const entries = await parseFile(getFilePath())
+  const { drivers, travel } = parseEntries(...entries)
+  return render(drivers, travel)
 }
 
-const getFilePath = () => {
+export const getFilePath = () => {
   const file = process.argv[2]
 
   if (file === undefined) {
-    console.log(`
+    log(`
       no file provided
     `)
     process.exit(-1)
   }
-  
+
   return path.join(__dirname, file)
 }
 
-const render = () => {
-  const out = [...drivers]
-    .map(driver => {
-      if (!trips[driver]) {
-        // if driver has no trips set miles to 0 and duration to 1 so we don't throw dividing by 0
-        return {driver, miles: 0, duration: 1}
-      }
-      return {driver, ...trips[driver]}
-    })
-    .map(({ driver, miles, duration }) => ({driver, miles, mph: miles / duration}))
-    .map(({ driver, miles, mph }) => {
-      if (miles) {
-        return `${driver}: ${miles} miles @ ${mph} mph`
-      }
-      return `${driver}: 0 miles`
-    })
-    .join('\n')
-
-  console.log(out)
+export const render = (drivers, travel) => {
+  return log(
+    [...drivers]
+      .map(driver => {
+        if (!travel[driver]) {
+          // if driver has no trips set miles to 0 and duration to 1 so we don't throw dividing by 0
+          return {driver, miles: 0, duration: 1}
+        }
+        return {driver, ...travel[driver]}
+      })
+      .map(({ driver, miles, duration }) => ({driver, miles, mph: miles / duration}))
+      .map(({ driver, miles, mph }) => {
+        if (log(miles)) {
+          return `${driver}: ${Math.round(miles)} miles @ ${Math.round(mph)} mph`
+        }
+        return `${driver}: 0 miles`
+      })
+      .join('\n')
+  )
 }
 
-const parseDriver = entry => {
-  validateParseDriver(entry)
-  drivers.add(entry[1])
+export const parseDriver = entry => {
+  if (entry.length !== 2) {
+    log(`
+      invalid driver entry
+      ${entry}
+    `)
+    process.exit(4)
+  }
+  return entry[1]
 }
 
-const findDuration = (startTime, endTime) => {
+export const findDuration = (startTime, endTime) => {
   const startTimeHours = Number(startTime.split(':')[0])
   const startTimeMinutes = Number(startTime.split(':')[1])
   const endTimeHours = Number(endTime.split(':')[0])
   const endTimeMinutes = Number(endTime.split(':')[1])
 
-  return endTimeHours + endTimeMinutes / 60 - startTimeHours - startTimeMinutes / 60 
+  return endTimeHours + endTimeMinutes / 60 - startTimeHours - startTimeMinutes / 60
 }
 
-const isValidSpeed = mph => mph >= 5 && mph <= 100
+export const isValidSpeed = mph => mph >= 5 && mph <= 100
 
-const parseTrip = entry => {
+export const parseTrip = entry => {
   validateParseTrip(entry)
-  
+
   const [ _, driver, startTime, endTime, miles ] = entry
   const duration = findDuration(startTime, endTime)
-  
-  if (isValidSpeed(miles / duration)) {
-    trips[driver] = trips[driver] || {miles: 0, duration: 0}
-    
-    trips[driver].miles += miles
-    trips[driver].duration += duration
+
+  if (Number(duration) && isValidSpeed(Number(miles) / Number(duration))) {
+    return {
+      driver,
+      duration,
+      miles: Number(miles)
+    }
   }
+  return null
 }
 
-const parseLine = entry => {
-console.log(entry)
+export const parseEntries = (entry, ...entries) => {
+  const defaultValues = {
+    drivers: new Set(),
+    travel: {}
+  }
+
+  if (entry === undefined) {
+    return defaultValues
+  }
+
+  let { drivers, travel } = parseEntries(...entries) || defaultValues
+
   if (entry[0] === 'Driver') {
-    return parseDriver(entry)
+    drivers.add(parseDriver(entry))
+
   } else if (entry[0] === 'Trip') {
-    return parseTrip(entry)
+    const trip = parseTrip(entry)
+
+    if (trip) {
+      const {driver, miles, duration} = trip
+      travel[driver] = travel[driver] || {miles: 0, duration: 0}
+
+      travel[driver].miles += miles
+      travel[driver].duration += duration
+    }
   } else {
-    console.log(`
+    log(`
       Invalid input.
       Every line in input must start with "Driver" or "Trip".
     `)
     return process.exit(2)
   }
+  return {drivers, travel}
 }
 
-const parseFile = filePath => {
+export const parseFile = filePath => {
   return readFileAsync(filePath)
     .then(data => {
       return data
         .split('\n')
         .filter(line => line !== '')
         .map(line => line.split(' '))
-        .forEach(parseLine)
 
     })
-    .catch(err => {
-      console.log(err)
-      console.log(`
+    .catch(() => {
+      log(`
         unable to read filetype:
         ${filePath}
       `)
@@ -110,7 +135,7 @@ const parseFile = filePath => {
 
 // library code
 
-const readFileAsync = filePath => {
+export const readFileAsync = filePath => {
   return new Promise((resolve, reject) => {
     fs.readFile(filePath, 'utf8', (err, data) => {
       if (err) {
@@ -121,26 +146,7 @@ const readFileAsync = filePath => {
   })
 }
 
-// validation
-
-const validateParseDriver = entry => {
-  if (entry.length !== 2) {
-    console.log(`
-      Invalid driver entry.
-      ${entry.join(' ')}
-    `)  
-    return process.exit(3)
-  }
-  if (drivers.has(entry[1])) {
-    console.log(`
-      Duplicate driver
-      entry[1]
-    `)
-    return process.exit(4)
-  }
-}
-
-const isTime = str => {
+export const isTime = str => {
   const time = str.split(':')
   return (
     time.length === 2 &&
@@ -155,17 +161,14 @@ const isTime = str => {
   )
 }
 
-const validateParseTrip = entry => {
+export const validateParseTrip = entry => {
   if (
     entry.length !== 5 ||
     !isTime(entry[2]) ||
     !isTime(entry[3]) ||
     isNaN(entry[4])
   ) {
-    console.log(entry.length)
-    console.log(isTime(entry[3]))
-    console.log(isNaN(entry[4]))
-    console.log(`
+    log(`
       Invalid trip
       ${entry.join(' ')}
     `)
@@ -173,4 +176,6 @@ const validateParseTrip = entry => {
   }
 }
 
-main()
+if (require.main === module) {
+  //main()
+}

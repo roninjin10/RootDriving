@@ -1,0 +1,25 @@
+{
+  "name": "root-take-home",
+  "version": "1.0.0",
+  "description": "",
+  "main": "driving.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/roninjin10/RootDriving.git"
+  },
+  "author": "William Cory",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/roninjin10/RootDriving/issues"
+  },
+  "homepage": "https://github.com/roninjin10/RootDriving#readme",
+  "devDependencies": {
+    "jest": "^23.1.0"
+  }
+}

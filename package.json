@@ -10,6 +10,7 @@
     "build": "npm run clean && mkdir -p dist && babel src -s -D -d dist",
     "clean": "rimraf dist",
     "lint": "esw -w src test",
+    "start": "npx babel-node driving.js test/data/test1.txt",
     "test": "jest",
     "debug": "node --inspect-brk node_modules/.bin/jest --runInBand"
   },

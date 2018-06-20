@@ -33,7 +33,7 @@ export const render = (drivers, travel) => {
       })
       .map(({ driver, miles, duration }) => ({driver, miles, mph: miles / duration}))
       .map(({ driver, miles, mph }) => {
-        if (log(miles)) {
+        if (miles) {
           return `${driver}: ${Math.round(miles)} miles @ ${Math.round(mph)} mph`
         }
         return `${driver}: 0 miles`
@@ -177,5 +177,5 @@ export const validateParseTrip = entry => {
 }
 
 if (require.main === module) {
-  //main()
+  main()
 }

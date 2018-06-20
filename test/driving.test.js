@@ -40,7 +40,7 @@ describe('render', () => {
     expect(rendered).toBe(`driver1: 20 miles @ 20 mph`)
   })
 
-  it('render should correctly render multiple drivers', () => {
+  it('render should render multiple drivers in order of miles driven', () => {
     const drivers = new Set([
       'driver1',
       'driver2',
@@ -60,8 +60,8 @@ describe('render', () => {
     expect(rendered).toBe(
       [
         'driver1: 20 miles @ 20 mph',
-        'driver2: 0 miles',
-        'driver3: 16 miles @ 8 mph'
+        'driver3: 16 miles @ 8 mph',
+        'driver2: 0 miles'
       ].join('\n')
     )
   })

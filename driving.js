@@ -32,6 +32,7 @@ export const render = (drivers, travel) => {
         return {driver, ...travel[driver]}
       })
       .map(({ driver, miles, duration }) => ({driver, miles, mph: miles / duration}))
+      .sort(({ miles: miles1 }, { miles: miles2 }) => miles2 - miles1)
       .map(({ driver, miles, mph }) => {
         if (miles) {
           return `${driver}: ${Math.round(miles)} miles @ ${Math.round(mph)} mph`
